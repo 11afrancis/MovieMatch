@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MovieMatch</title>
+
+<script src="https://unpkg.com/hammerjs@2.0.8/hammer.min.js"></script>
+
+<style>
+
+body{
+background:#111;
+color:white;
+font-family:Arial;
+text-align:center;
+margin:0;
+}
+
+h1{
+margin-top:40px;
+}
+
+#card{
+width:320px;
+margin:30px auto;
+background:#222;
+border-radius:15px;
+padding:10px;
+}
+
+img{
+width:100%;
+border-radius:10px;
+}
+
+button{
+padding:15px;
+margin:10px;
+font-size:18px;
+border:none;
+border-radius:10px;
+}
+
+#matches{
+margin-top:30px;
+}
+
+li{
+margin:6px 0;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="home">
+
+<h1>🎬 MovieMatch</h1>
+
+<button onclick="createRoom()">Create Room</button>
+
+<br><br>
+
+<input id="roomInput" placeholder="Enter Room Code">
+
+<button onclick="joinRoom()">Join Room</button>
+
+</div>
+
+<div id="app" style="display:none">
+
+<h2 id="roomCode"></h2>
+
+<div id="card">
+
+<img id="poster">
+
+<h3 id="title"></h3>
+
+<p id="rating"></p>
+
+</div>
+
+<div id="matches">
+
+<h2>🍿 Your Matches</h2>
+
+<ul id="matchList"></ul>
+
+</div>
+
+</div>
+
+<script>
+
+const apiKey="f761c95461d9ed84f02d4cef702cfc05"
+
+let movies=[]
+let index=0
+let room=""
+
+async function loadMovies(){
+
+let res=await fetch(
+`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`
+)
+
+let data=await res.json()
+
+movies=data.results
+
+showMovie()
+
+setupSwipe()
+
+}
+
+function showMovie(){
+
+let movie=movies[index]
+
+if(!movie) return
+
+document.getElementById("poster").src=
+"https://image.tmdb.org/t/p/w500"+movie.poster_path
+
+document.getElementById("title").innerText=movie.title
+
+document.getElementById("rating").innerText="⭐ "+movie.vote_average
+
+}
+
+function setupSwipe(){
+
+let card=document.getElementById("card")
+
+let hammer=new Hammer(card)
+
+hammer.on("swipeleft",function(){
+
+nextMovie()
+
+})
+
+hammer.on("swiperight",function(){
+
+likeMovie()
+
+})
+
+}
+
+function nextMovie(){
+
+index++
+showMovie()
+
+}
+
+function likeMovie(){
+
+let movie=movies[index]
+
+checkMatch(movie)
+
+index++
+
+showMovie()
+
+}
+
+function createRoom(){
+
+room=Math.random().toString(36).substring(2,6).toUpperCase()
+
+localStorage.setItem(room,JSON.stringify({
+likes:[],
+matches:[]
+}))
+
+startRoom()
+
+}
+
+function joinRoom(){
+
+room=document.getElementById("roomInput").value.toUpperCase()
+
+startRoom()
+
+}
+
+function startRoom(){
+
+document.getElementById("home").style.display="none"
+
+document.getElementById("app").style.display="block"
+
+document.getElementById("roomCode").innerText="Room: "+room
+
+loadMovies()
+
+}
+
+function checkMatch(movie){
+
+let data=JSON.parse(localStorage.getItem(room)) || {likes:[],matches:[]}
+
+if(data.likes.includes(movie.id)){
+
+if(!data.matches.includes(movie.title)){
+
+data.matches.push(movie.title)
+
+displayMatch(movie.title)
+
+}
+
+}
+
+data.likes.push(movie.id)
+
+localStorage.setItem(room,JSON.stringify(data))
+
+}
+
+function displayMatch(title){
+
+let list=document.getElementById("matchList")
+
+let item=document.createElement("li")
+
+item.innerText=title
+
+list.appendChild(item)
+
+}
+
+</script>
+
+</body>
+</html>
